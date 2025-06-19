@@ -24,6 +24,10 @@ private slots:
     void on_save2_clicked();
     void on_openPlaint_clicked();
     void on_swap_clicked();
+    void on_reset_clicked();
+    void on_reset2_clicked();
+    void on_swap2_clicked();
+
 private:
     Ui::MainWindow *ui;
 

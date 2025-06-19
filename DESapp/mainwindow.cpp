@@ -206,6 +206,10 @@ MainWindow::MainWindow(QWidget *parent)
     disconnect(ui->openCypherText, &QPushButton::clicked, 0, 0);
     disconnect(ui->save2, &QPushButton::clicked, 0, 0);
     disconnect(ui->openPlaint, &QPushButton::clicked, 0, 0);
+    disconnect(ui->Reset, &QPushButton::clicked, 0, 0);
+    disconnect(ui->Reset2, &QPushButton::clicked, 0, 0);
+    disconnect(ui->swap, &QPushButton::clicked, 0, 0);
+    disconnect(ui->swap_2, &QPushButton::clicked, 0, 0);
 
     // Kết nối nút mã hóa
     connect(ui->myEncryptButton, &QPushButton::clicked, this, [=]() {
@@ -232,9 +236,11 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->openCypherText, &QPushButton::clicked, this, &MainWindow::on_openCypherText_clicked, Qt::UniqueConnection);
     connect(ui->save2, &QPushButton::clicked, this, &MainWindow::on_save2_clicked, Qt::UniqueConnection);
     connect(ui->openPlaint, &QPushButton::clicked, this, &MainWindow::on_openPlaint_clicked, Qt::UniqueConnection);
-
-    // Kết nối nút Chuyển (swap)
+    connect(ui->Reset, &QPushButton::clicked, this, &MainWindow::on_reset_clicked, Qt::UniqueConnection);
+    connect(ui->Reset2, &QPushButton::clicked, this, &MainWindow::on_reset2_clicked, Qt::UniqueConnection);
     connect(ui->swap, &QPushButton::clicked, this, &MainWindow::on_swap_clicked, Qt::UniqueConnection);
+    connect(ui->swap_2, &QPushButton::clicked, this, &MainWindow::on_swap2_clicked, Qt::UniqueConnection);
+
     QApplication::setStyle(QStyleFactory::create("Fusion"));
 
     QPalette lightPalette;
@@ -252,7 +258,6 @@ MainWindow::MainWindow(QWidget *parent)
     lightPalette.setColor(QPalette::HighlightedText, Qt::white);
 
     qApp->setPalette(lightPalette);
-
 }
 
 MainWindow::~MainWindow()
@@ -398,7 +403,23 @@ void MainWindow::on_openPlaint_clicked() {
     QDesktopServices::openUrl(QUrl::fromLocalFile(folderPath));
 }
 
-// Slot cho nút Chuyển (swap)
+// Slot cho nút Reset (mã hóa)
+void MainWindow::on_reset_clicked() {
+    qDebug() << "on_reset_clicked called";
+    ui->myTextEditInput->clear();
+    ui->myKeyInput->clear();
+    ui->myTextEditOutput->clear();
+}
+
+// Slot cho nút Reset2 (giải mã)
+void MainWindow::on_reset2_clicked() {
+    qDebug() << "on_reset2_clicked called";
+    ui->myTextEditInput2->clear();
+    ui->myKeyInput->clear();
+    ui->myTextEditOutput2->clear();
+}
+
+// Slot cho nút Swap (chuyển bản mã từ mã hóa sang giải mã)
 void MainWindow::on_swap_clicked() {
     qDebug() << "on_swap_clicked called";
     QString ciphertext = ui->myTextEditOutput->toPlainText();
@@ -406,5 +427,16 @@ void MainWindow::on_swap_clicked() {
         ui->myTextEditInput2->setText(ciphertext);
     } else {
         QMessageBox::warning(this, tr("Error"), tr("No ciphertext to transfer!"));
+    }
+}
+
+// Slot cho nút Swap_2 (chuyển bản rõ từ giải mã sang mã hóa)
+void MainWindow::on_swap2_clicked() {
+    qDebug() << "on_swap2_clicked called";
+    QString plaintext = ui->myTextEditOutput2->toPlainText();
+    if (!plaintext.isEmpty()) {
+        ui->myTextEditInput->setText(plaintext);
+    } else {
+        QMessageBox::warning(this, tr("Error"), tr("No plaintext to transfer!"));
     }
 }
