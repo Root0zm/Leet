@@ -12,6 +12,7 @@
 #include <QUrl>
 #include <QByteArray>
 #include <QStyleFactory>
+#include "filelistwindow.h"
 using namespace std;
 
 // Khai báo nguyên mẫu hàm
@@ -126,7 +127,7 @@ string DES_round(const string &pt_bin, const vector<string> &rkb) {
 // Mã hóa chuỗi ASCII sang Base64 bằng CBC
 QString MainWindow::encrypt(const QString &plaintext, const QString &key) {
     if (key.length() != 8) {
-        return QString("Error: Key must be 8 characters!");
+        return "Lỗi: Key phải có đúng 8 ký tự!";
     }
     QByteArray keyBytes = key.toLatin1();
     string key_bin = bin_from_bytes(keyBytes);
@@ -160,7 +161,7 @@ QString MainWindow::encrypt(const QString &plaintext, const QString &key) {
 // Giải mã chuỗi Base64 bằng CBC
 QString MainWindow::decrypt(const QString &ciphertextBase64, const QString &key) {
     if (key.length() != 8) {
-        return QString("Error: Key must be 8 characters!");
+        return "Lỗi: Key phải có đúng 8 ký tự!";
     }
     QByteArray keyBytes = key.toLatin1();
     string key_bin = bin_from_bytes(keyBytes);
@@ -214,8 +215,7 @@ MainWindow::MainWindow(QWidget *parent)
     // Kết nối nút mã hóa
     connect(ui->myEncryptButton, &QPushButton::clicked, this, [=]() {
         QString plaintext = ui->myTextEditInput->toPlainText();
-        QString key = ui->myKeyInput->text().left(8);
-        if (key.length() < 8) key = key.leftJustified(8, ' ');
+        QString key = ui->myKeyInput->text();
         QString result = encrypt(plaintext, key);
         ui->myTextEditOutput->setText(result);
     });
@@ -223,8 +223,7 @@ MainWindow::MainWindow(QWidget *parent)
     // Kết nối nút giải mã
     connect(ui->myDecryptButton, &QPushButton::clicked, this, [=]() {
         QString ciphertext = ui->myTextEditInput2->toPlainText();
-        QString key = ui->myKeyInput->text().left(8);
-        if (key.length() < 8) key = key.leftJustified(8, ' ');
+        QString key = ui->myKeyInput->text();
         QString result = decrypt(ciphertext, key);
         ui->myTextEditOutput2->setText(result);
     });
@@ -268,7 +267,7 @@ MainWindow::~MainWindow()
 // Slot cho nút mở file plaintext (mã hóa)
 void MainWindow::on_openPlaintText_clicked() {
     qDebug() << "on_openPlaintText_clicked called";
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Open Text File"), "", tr("Text Files (*.txt)"));
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Mở file văn bản"), "", tr("File văn bản (*.txt)"));
     if (!fileName.isEmpty()) {
         QFile file(fileName);
         if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -276,14 +275,14 @@ void MainWindow::on_openPlaintText_clicked() {
             QString key = in.readLine().trimmed();
             QString plaintext = in.readLine().trimmed();
             if (key.length() != 8) {
-                QMessageBox::warning(this, tr("Error"), tr("Key must be 8 characters!"));
+                QMessageBox::warning(this, tr("Lỗi"), tr("Key phải có đúng 8 ký tự!"));
                 return;
             }
             ui->myKeyInput->setText(key);
             ui->myTextEditInput->setText(plaintext);
             file.close();
         } else {
-            QMessageBox::warning(this, tr("Error"), tr("Cannot open file!"));
+            QMessageBox::warning(this, tr("Lỗi"), tr("Không thể mở file!"));
         }
     }
 }
@@ -297,11 +296,11 @@ void MainWindow::on_save1_clicked() {
         QDir dir(folderPath);
         if (!dir.exists()) {
             if (!dir.mkpath(".")) {
-                QMessageBox::warning(this, tr("Error"), tr("Failed to create folder 'EncryptedFiles'. Check permissions or path."));
+                QMessageBox::warning(this, tr("Lỗi"), tr("Không thể tạo thư mục 'EncryptedFiles'. Kiểm tra quyền truy cập hoặc đường dẫn."));
                 return;
             }
         }
-        QString fileName = QFileDialog::getSaveFileName(this, tr("Save File"), dir.path(), tr("Text Files (*.txt)"));
+        QString fileName = QFileDialog::getSaveFileName(this, tr("Lưu file"), dir.path(), tr("File văn bản (*.txt)"));
         if (!fileName.isEmpty()) {
             QFile file(fileName);
             if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
@@ -310,11 +309,11 @@ void MainWindow::on_save1_clicked() {
                 out << ciphertext;
                 file.close();
             } else {
-                QMessageBox::warning(this, tr("Error"), tr("Cannot save file!"));
+                QMessageBox::warning(this, tr("Lỗi"), tr("Không lưu được file!"));
             }
         }
     } else {
-        QMessageBox::warning(this, tr("Error"), tr("No ciphertext to save!"));
+        QMessageBox::warning(this, tr("Lỗi"), tr("Không có gì để lưu!"));
     }
 }
 
@@ -325,19 +324,21 @@ void MainWindow::on_openCypher_clicked() {
     QDir dir(folderPath);
     if (!dir.exists()) {
         if (dir.mkpath(".")) {
-            QMessageBox::information(this, tr("Success"), tr("Folder 'EncryptedFiles' created successfully."));
+            QMessageBox::information(this, tr("Thành công"), tr("Thư mục 'EncryptedFiles' đã được tạo thành công."));
         } else {
-            QMessageBox::warning(this, tr("Error"), tr("Failed to create folder 'EncryptedFiles'. Check permissions or path."));
+            QMessageBox::warning(this, tr("Lỗi"), tr("Không thể tạo thư mục 'EncryptedFiles'. Kiểm tra quyền truy cập hoặc đường dẫn."));
             return;
         }
     }
-    QDesktopServices::openUrl(QUrl::fromLocalFile(folderPath));
+    FileListWindow *window = new FileListWindow(folderPath, "Ciphertext", this);
+    connect(window, &FileListWindow::itemDoubleClicked, this, &MainWindow::handleItemDoubleClicked);
+    window->show();
 }
 
 // Slot cho nút mở file ciphertext (giải mã)
 void MainWindow::on_openCypherText_clicked() {
     qDebug() << "on_openCypherText_clicked called";
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Open Text File"), "", tr("Text Files (*.txt)"));
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Mở file văn bản"), "", tr("File văn bản (*.txt)"));
     if (!fileName.isEmpty()) {
         QFile file(fileName);
         if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -345,14 +346,14 @@ void MainWindow::on_openCypherText_clicked() {
             QString key = in.readLine().trimmed();
             QString ciphertext = in.readLine().trimmed();
             if (key.length() != 8) {
-                QMessageBox::warning(this, tr("Error"), tr("Key must be 8 characters!"));
+                QMessageBox::warning(this, tr("Lỗi"), tr("Key phải có đúng 8 ký tự!"));
                 return;
             }
             ui->myKeyInput->setText(key);
             ui->myTextEditInput2->setText(ciphertext);
             file.close();
         } else {
-            QMessageBox::warning(this, tr("Error"), tr("Cannot open file!"));
+            QMessageBox::warning(this, tr("Lỗi"), tr("Không thể mở file!"));
         }
     }
 }
@@ -366,11 +367,11 @@ void MainWindow::on_save2_clicked() {
         QDir dir(folderPath);
         if (!dir.exists()) {
             if (!dir.mkpath(".")) {
-                QMessageBox::warning(this, tr("Error"), tr("Failed to create folder 'DecryptedFiles'. Check permissions or path."));
+                QMessageBox::warning(this, tr("Lỗi"), tr("Không thể tạo thư mục 'DecryptedFiles'. Kiểm tra quyền truy cập hoặc đường dẫn."));
                 return;
             }
         }
-        QString fileName = QFileDialog::getSaveFileName(this, tr("Save File"), dir.path(), tr("Text Files (*.txt)"));
+        QString fileName = QFileDialog::getSaveFileName(this, tr("Lưu file"), dir.path(), tr("File văn bản (*.txt)"));
         if (!fileName.isEmpty()) {
             QFile file(fileName);
             if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
@@ -379,11 +380,11 @@ void MainWindow::on_save2_clicked() {
                 out << plaintext;
                 file.close();
             } else {
-                QMessageBox::warning(this, tr("Error"), tr("Cannot save file!"));
+                QMessageBox::warning(this, tr("Lỗi"), tr("Không lưu được file!"));
             }
         }
     } else {
-        QMessageBox::warning(this, tr("Error"), tr("No plaintext to save!"));
+        QMessageBox::warning(this, tr("Lỗi"), tr("Không có gì để lưu!"));
     }
 }
 
@@ -394,13 +395,15 @@ void MainWindow::on_openPlaint_clicked() {
     QDir dir(folderPath);
     if (!dir.exists()) {
         if (dir.mkpath(".")) {
-            QMessageBox::information(this, tr("Success"), tr("Folder 'DecryptedFiles' created successfully."));
+            QMessageBox::information(this, tr("Thành công"), tr("Thư mục 'DecryptedFiles' đã được tạo thành công."));
         } else {
-            QMessageBox::warning(this, tr("Error"), tr("Failed to create folder 'DecryptedFiles'. Check permissions or path."));
+            QMessageBox::warning(this, tr("Lỗi"), tr("Không thể tạo thư mục 'DecryptedFiles'. Kiểm tra quyền truy cập hoặc đường dẫn."));
             return;
         }
     }
-    QDesktopServices::openUrl(QUrl::fromLocalFile(folderPath));
+    FileListWindow *window = new FileListWindow(folderPath, "Plaintext", this);
+    connect(window, &FileListWindow::itemDoubleClicked, this, &MainWindow::handleItemDoubleClicked);
+    window->show();
 }
 
 // Slot cho nút Reset (mã hóa)
@@ -426,7 +429,7 @@ void MainWindow::on_swap_clicked() {
     if (!ciphertext.isEmpty()) {
         ui->myTextEditInput2->setText(ciphertext);
     } else {
-        QMessageBox::warning(this, tr("Error"), tr("No ciphertext to transfer!"));
+        QMessageBox::warning(this, tr("Lỗi"), tr("Không có bản mã để chuyển!"));
     }
 }
 
@@ -437,6 +440,15 @@ void MainWindow::on_swap2_clicked() {
     if (!plaintext.isEmpty()) {
         ui->myTextEditInput->setText(plaintext);
     } else {
-        QMessageBox::warning(this, tr("Error"), tr("No plaintext to transfer!"));
+        QMessageBox::warning(this, tr("Lỗi"), tr("Không có bản rõ để chuyển!"));
+    }
+}
+
+void MainWindow::handleItemDoubleClicked(const QString &key, const QString &content, bool isEncrypted) {
+    ui->myKeyInput->setText(key);
+    if (isEncrypted) {
+        ui->myTextEditInput2->setText(content); // Điền vào ô giải mã
+    } else {
+        ui->myTextEditInput->setText(content);  // Điền vào ô mã hóa
     }
 }

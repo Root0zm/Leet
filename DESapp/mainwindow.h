@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QString>
 #include <QTextStream>
+#include "filelistwindow.h"
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -23,10 +24,11 @@ private slots:
     void on_openCypherText_clicked();
     void on_save2_clicked();
     void on_openPlaint_clicked();
-    void on_swap_clicked();
     void on_reset_clicked();
     void on_reset2_clicked();
+    void on_swap_clicked();
     void on_swap2_clicked();
+    void handleItemDoubleClicked(const QString &key, const QString &content, bool isEncrypted);
 
 private:
     Ui::MainWindow *ui;
